@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -17,17 +18,35 @@ func main() {
 	// Test URLs
 	urls := []string{
 		"https://example.com",
-		"https://golang.org",
+		"https://www.google.com/404",     // Will return 404
+		"",                               // Invalid URL
+		"https://github.com/nonexistent", // Will return 404
 	}
 
 	// Fetch and print content for each URL
 	for _, url := range urls {
+		fmt.Printf("📡 Fetching: %s\n", url)
+
 		content, err := fetcher.Fetch(url)
 		if err != nil {
-			log.Printf("Error fetching %s: %v", url, err)
+			// Check for specific error types
+			if errors.Is(err, scraper.ErrInvalidURL) {
+				log.Printf("❌ Invalid URL: %s\n", url)
+			} else if errors.Is(err, scraper.ErrTimeout) {
+				log.Printf("❌ Timeout while fetching: %s\n", url)
+			} else {
+				var fetchErr *scraper.FetchError
+				if errors.As(err, &fetchErr) {
+					log.Printf("❌ Fetch error for %s: status code %d\n", fetchErr.URL, fetchErr.StatusCode)
+				} else {
+					log.Printf("❌ General error fetching %s: %v\n", url, err)
+				}
+			}
+
 			continue
 		}
-		fmt.Printf("Content fetched from %s:\n%s\n", url, content[:100]) // Print first 100 characters
+
+		fmt.Printf("✅ Fetched content from %s: %d bytes\n", url, len(content))
 	}
-	fmt.Println("Web scraper finished.")
+
 }

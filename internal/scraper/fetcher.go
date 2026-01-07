@@ -1,6 +1,8 @@
 package scraper
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -25,20 +27,31 @@ func NewHTTPFetcher(timeout time.Duration) *HTTPFetcher {
 }
 
 // Fetch retrieves the content of the given URL.
-func (hf *HTTPFetcher) Fetch(url string) (string, error) {
-	resp, err := hf.Client.Get(url)
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch URL %s: %w", url, err)
+// Update fetch method to use custom errors
+func (f *HTTPFetcher) Fetch(url string) (string, error) {
+	if url == "" {
+		return "", ErrInvalidURL
 	}
+
+	resp, err := f.Client.Get(url)
+	if err != nil {
+		// Check if it's a timeout
+		if errors.Is(err, context.DeadlineExceeded) {
+			return "", ErrTimeout
+		}
+		return "", fmt.Errorf("failed to fetch %s: %w", url, err)
+	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("non-200 response for URL %s: %d", url, resp.StatusCode)
+		return "", NewFetchError(url, resp.StatusCode, fmt.Errorf("bad status code"))
 	}
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return "", fmt.Errorf("failed to read response body for URL %s: %w", url, err)
+		return "", fmt.Errorf("failed to read body for %s: %w", url, err)
 	}
+
 	return string(body), nil
 }
