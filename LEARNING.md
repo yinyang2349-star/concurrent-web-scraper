@@ -79,3 +79,19 @@ func (hf *HTTPFetcher) Fetch(url string) (string, error) {
 - Always wrap errors with context
 - Use sentinel errors for known error types
 - Custom errors when you need extra data
+
+## Day 4: Context Package
+
+### Key Concepts:
+
+- Context carries deadlines, cancellation signals, and request-scoped values
+- Always pass context as first parameter
+- `context.Background()` for top-level
+- `context.WithTimeout()` for time-limited operations
+- `context.WithCancel()` for manual cancellation
+
+### Use Cases:
+
+- HTTP request timeouts
+- Graceful shutdown
+- Cancelling goroutines
