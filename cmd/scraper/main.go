@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	"github.com/yinyang2349-star/concurrent-web-scraper/internal/scraper"
@@ -11,48 +10,50 @@ import (
 
 func main() {
 	fmt.Println("Starting web scraper...")
-	fmt.Println("🚀 Day 4 - Context Package\n")
+	fmt.Println("🚀 Day 5 - Multiple URLs\n")
 
+	// Create scraper instance
 	fetcher := scraper.NewHTTPFetcher()
+	scr := scraper.NewScraper(fetcher)
 
-	// Test 1: Normal fetch with context
-	fmt.Println("Test 1: Normal fetch with context")
-	ctx := context.Background()
-	content, err := fetcher.Fetch(ctx, "https://example.com")
-	if err != nil {
-		log.Printf("❌ error fetching URL: %v\n", err)
-	} else {
-		fmt.Printf("✅ successfully fetched content length: %d bytes\n\n", len(content))
+	// URLs to scrape
+	urls := []string{
+		"https://example.com",
+		"https://httpstat.us/200",
+		"https://httpstat.us/404",
+		"https://httpstat.us/500",
+		"https://thisurldoesnotexist.tld", // Invalid URL to test error handling
 	}
 
-	// Test 2: Fetch with timeout context
-	fmt.Println("Test 2: Fetch with 1 second timeout context")
-	ctx2, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	// Scrape with timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	// This might take longer than 1 second depending on network conditions
-	content, err = fetcher.Fetch(ctx2, "https://httpstat.us/200? sleep=2000")
-	if err != nil {
-		log.Printf("❌ Timeout as expected: %v\n", err)
-	} else {
-		fmt.Printf("✅ successfully fetched content length: %d bytes\n\n", len(content))
+	fmt.Printf("Scraping %d URLs with 30 seconds timeout...\n\n", len(urls))
+	start := time.Now()
+
+	results := scr.Scrape(ctx, urls)
+
+	totalDuration := time.Since(start)
+
+	// Print results
+	successCount := 0
+	for _, result := range results {
+		if result.Success() {
+			fmt.Printf("✅ Fetched %s in %v (Content Length: %d bytes)\n", result.URL, result.Duration, len(result.Content))
+			successCount++
+		} else {
+			fmt.Printf("❌ Failed to fetch %s in %v (Error: %v)\n", result.URL, result.Duration, result.Error)
+
+		}
 	}
 
-	// Test 3: Manual cancellation
-	fmt.Println("Test 3: Manual cancellation")
-	ctx3, cancel3 := context.WithCancel(context.Background())
+	// Summary
+	fmt.Println("-------------------------------------")
+	fmt.Printf("\n--- Summary ---")
+	fmt.Printf("\nTotal URLs: %d", len(urls))
+	fmt.Printf("\nSuccessful fetches: %d", successCount)
+	fmt.Printf("\nFailed fetches: %d", len(urls)-successCount)
+	fmt.Printf("\nTotal duration: %v\n", totalDuration)
 
-	// Cancel after 100 milliseconds
-	go func() {
-		time.Sleep(100 * time.Millisecond)
-		fmt.Println("⏳ Canceling the request...")
-		cancel3()
-	}()
-
-	content, err = fetcher.Fetch(ctx3, "https://httpstat.us/200? sleep=5000")
-	if err != nil {
-		log.Printf("❌ Request canceled as expected: %v\n", err)
-	} else {
-		fmt.Printf("✅ successfully fetched content length: %d bytes\n\n", len(content))
-	}
 }
