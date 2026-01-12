@@ -1,97 +1,151 @@
-# Learning Notes - Week 1
+# 🚀 Concurrent Web Scraper
 
-## Day 2: Interfaces
+A production-ready web scraper built with Go, focusing on clean architecture, proper error handling, and context management.
 
-### Key Concepts:
+## 📚 Learning Project
 
-- Interfaces are satisfied implicitly (no "implements" keyword)
-- Accept interfaces, return concrete types
-- Empty interface `interface{}` can hold any value
-- Type assertion: `value.(Type)`
+This is Week 1 of my journey to become an expert software engineer in 2026. The goal is to master Go fundamentals, interfaces, error handling, and the context package.
 
-### Questions:
+## ✨ Features
 
-- Q: When to use interfaces?
-- A: When you want flexibility and testability
+- ✅ Interface-based design for testability
+- ✅ Custom error types with error wrapping
+- ✅ Context support for cancellationn and timeouts
+- ✅ Multiple URL scraping with result tracking
+- ✅ Duration and timestamp tracking
+- 🔄 Concurrency support (coming in Week 2)
 
-### Code Examples:
+## 🏗️ Architecture
+
+```
+concurrent-web-scraper/
+├── cmd/
+│   └── scraper/
+│       └── main.go          # Entry point
+├── internal/
+│   └── scraper/
+│       ├── fetcher.go       # HTTP fetcher implementation
+│       ├── errors.go        # Custom error types
+│       ├── result.go        # Result data structure
+│       └── scraper.go       # Scraper orchestrator
+├── pkg/                     # (future:  reusable packages)
+├── test/                    # (future: tests)
+├── go.mod
+├── go.sum
+├── README.md
+└── LEARNING.md
+```
+
+## 🚀 Usage
+
+```bash
+# Clone repository
+git clone https://github.com/yinyang2349-star/concurrent-web-scraper.git
+cd concurrent-web-scraper
+
+# Run scraper
+go run cmd/scraper/main.go
+```
+
+### Basic Usage
 
 ```go
-package scraper
+package main
 
 import (
+	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"time"
+
+	"github.com/yinyang2349-star/concurrent-web-scraper/internal/scraper"
 )
 
-// Fetcher defines the interface for fetching web content.
-type Fetcher interface {
-	Fetch(url string) (string, error)
-}
+func main() {
+	fmt.Println("Starting web scraper...")
+	fmt.Println("🚀 Day 5 - Multiple URLs")
 
-// HTTPFetcher implements the Fetcher interface using HTTP.
-type HTTPFetcher struct {
-	Client *http.Client
-}
+	// Create scraper instance
+	fetcher := scraper.NewHTTPFetcher()
+	scr := scraper.NewScraper(fetcher)
 
-// NewHTTPFetcher creates a new instance of HTTPFetcher with a timeout.
-func NewHTTPFetcher(timeout time.Duration) *HTTPFetcher {
-	return &HTTPFetcher{
-		Client: &http.Client{Timeout: timeout},
-	}
-}
-
-// Fetch retrieves the content of the given URL.
-func (hf *HTTPFetcher) Fetch(url string) (string, error) {
-	resp, err := hf.Client.Get(url)
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch URL %s: %w", url, err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("non-200 response for URL %s: %d", url, resp.StatusCode)
+	// URLs to scrape
+	urls := []string{
+		"https://example.com",
+		"https://httpstat.us/200",
+		"https://httpstat.us/404",
+		"https://httpstat.us/500",
+		"https://thisurldoesnotexist.tld", // Invalid URL to test error handling
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return "", fmt.Errorf("failed to read response body for URL %s: %w", url, err)
+	// Scrape with timeout context
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	fmt.Printf("Scraping %d URLs with 30 seconds timeout...\n\n", len(urls))
+	start := time.Now()
+
+	results := scr.Scrape(ctx, urls)
+
+	totalDuration := time.Since(start)
+
+	// Print results
+	successCount := 0
+	for _, result := range results {
+		if result.Success() {
+			fmt.Printf("✅ Fetched %s in %v (Content Length: %d bytes)\n", result.URL, result.Duration, len(result.Content))
+			successCount++
+		} else {
+			fmt.Printf("❌ Failed to fetch %s in %v (Error: %v)\n", result.URL, result.Duration, result.Error)
+
+		}
 	}
-	return string(body), nil
+
+	// Summary
+	fmt.Println("-------------------------------------")
+	fmt.Printf("\n--- Summary ---")
+	fmt.Printf("\nTotal URLs: %d", len(urls))
+	fmt.Printf("\nSuccessful fetches: %d", successCount)
+	fmt.Printf("\nFailed fetches: %d", len(urls)-successCount)
+	fmt.Printf("\nTotal duration: %v\n", totalDuration)
+
 }
 
 ```
 
-## Day 3: Error Handling
+## 🛠️ Tech Stack
 
-### Key Concepts:
+- **Language:** Go 1.21+
+- **Standard Library:** net/http, context, errors, io
 
-- Errors are values (implements `error` interface)
-- `fmt.Errorf` with `%w` for error wrapping
-- `errors.Is()` for error comparison
-- `errors.As()` for type assertion
-- Custom error types for rich error information
+## 📈 Roadmap
 
-### Best Practices:
+- [x] Week 1: Fundamentals (interfaces, errors, context)
+- [ ] Week 2: Concurrency (goroutines, channels, worker pools)
+- [ ] Week 3: Testing (unit tests, table-driven tests, mocks)
+- [ ] Week 4: CLI & Features (Cobra, rate limiting, output formats)
 
-- Always wrap errors with context
-- Use sentinel errors for known error types
-- Custom errors when you need extra data
+## 🎓 Learning Resources
 
-## Day 4: Context Package
+- [Effective Go](https://go.dev/doc/effective_go)
+- [Go by Example](https://gobyexample.com)
+- [Go Blog - Error Handling](https://go.dev/blog/error-handling-and-go)
+- [Go Blog - Context](https://go.dev/blog/context)
 
-### Key Concepts:
+## 📝 Development Log
 
-- Context carries deadlines, cancellation signals, and request-scoped values
-- Always pass context as first parameter
-- `context.Background()` for top-level
-- `context.WithTimeout()` for time-limited operations
-- `context.WithCancel()` for manual cancellation
+See [LEARNING.md](LEARNING.md) for daily learning notes and progress.
 
-### Use Cases:
+## 👤 Author
 
-- HTTP request timeouts
-- Graceful shutdown
-- Cancelling goroutines
+**yinyang2349-star**
+
+- GitHub: [@yinyang2349-star](https://github.com/yinyang2349-star)
+- Learning Journey: [2026 Expert Software Engineer Roadmap]
+
+## 📄 License
+
+MIT License - feel free to use for learning!
+
+---
+
+**⭐ Star this repo if you're also on a learning journey!**

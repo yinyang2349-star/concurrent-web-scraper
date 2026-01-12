@@ -10,7 +10,7 @@ import (
 
 func main() {
 	fmt.Println("Starting web scraper...")
-	fmt.Println("🚀 Day 5 - Multiple URLs\n")
+	fmt.Println("🚀 Day 5 - Multiple URLs")
 
 	// Create scraper instance
 	fetcher := scraper.NewHTTPFetcher()
